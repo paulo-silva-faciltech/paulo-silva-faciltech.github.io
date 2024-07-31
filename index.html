@@ -4,32 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Captura de Fotos</title>
+    <style>
+        video, img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
     <h1>Captura de Fotos com a Câmera</h1>
-    <video id="video" width="640" height="480" autoplay></video>
+    <video id="video" width="640" height="480" autoplay playsinline></video>
+    <br/>
+    <button id="switch">Alternar Câmera</button>
     <button id="capture">Capturar Foto</button>
     <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
     <img id="photo" alt="Sua Foto" style="display:none;"/>
 
     <script>
-        // Elementos do DOM
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const photo = document.getElementById('photo');
         const captureButton = document.getElementById('capture');
+        const switchButton = document.getElementById('switch');
 
-        // Acessa a câmera
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
+        let currentStream = null;
+        let usingFrontCamera = true;
+
+        async function getCameraStream() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: usingFrontCamera ? 'user' : 'environment'
+                }
+            };
+
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
                 video.play();
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error("Erro ao acessar a câmera: ", err);
-            });
+            }
+        }
 
-        // Captura a foto quando o botão é clicado
         captureButton.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -37,6 +57,14 @@
             photo.setAttribute('src', data);
             photo.style.display = 'block';
         });
+
+        switchButton.addEventListener('click', () => {
+            usingFrontCamera = !usingFrontCamera;
+            getCameraStream();
+        });
+
+        // Inicializa a câmera
+        getCameraStream();
     </script>
 </body>
 </html>
